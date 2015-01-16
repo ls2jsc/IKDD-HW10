@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>臺灣102年底各縣市人口圓環圖</title>
+<style>
+
+body {
+  font: 10px sans-serif;
+  position: relative;
+  width: 900px;
+}
+
+.arc path {
+  stroke: #fff;
+}
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip 
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}*/
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+label {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+</style>
+<body>
+<label>
+	<form action="bar.html">
+    <button class="change">View in bar chart</button>
+	</form>
+	<form action="tw_map.html">
+    <button class="change1">View in map</button>
+	</form>
+</label>
+<br><br><br><br>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+<script>
+var width = 1000,
+    height = 600,
+    radius = Math.min(width, height) / 2,
+	labelr = radius + 30;
+
+var color = d3.scale.ordinal()
+    .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+
+var arc = d3.svg.arc()
+    .outerRadius(radius - 10)
+    .innerRadius(radius - 70);
+
+var pie = d3.layout.pie()
+    .sort(null)
+    .value(function(d) { return d.population; });
+
+var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-10, 0])
+  .html(function(d) {
+    return "<strong>" + d.data.city + "<br>人口:</strong> <span style='color:red'>" + d.data.population 
+			+ "</span><br><strong>比例: </strong><span style='color:red'>" + d.data.divide + "%</span>";
+  })
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+  .append("g")
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+svg.call(tip);
+
+d3.csv("Hw10_data.csv", function(error, data) {
+
+  data.forEach(function(d) {
+    d.population = +d.population;
+	d.divide = d.population/233735.17;
+	d.divide = d.divide.toFixed(2) ;
+  });
+
+  var g = svg.selectAll(".arc")
+      .data(pie(data))
+    .enter().append("g")
+      .attr("class", "arc");
+
+  g.append("path")
+      .attr("d", arc)
+	  .on('mouseover', tip.show)
+      .on('mouseout', tip.hide)
+      .style("fill", function(d) { return color(d.data.city); })
+	  .transition()
+      .ease("exp")
+	  .ease("bounce")
+      .duration(2500)
+      .attrTween("d", tweenPie);
+
+  var text=g.append("text")
+  .text(function(d,i) { return d.data.city ;})
+  .attr("dy",10)
+  .attr("text-anchor", "middle")
+  .transition()
+  .ease("exp")
+  .ease("bounce")
+  .duration(2500)
+  .delay(function(d,i) { return i*10;})
+  .attrTween("transform", tweenText);
+	  
+});
+function tweenPie(b) {
+  var i = d3.interpolate({startAngle: 0, endAngle: 0}, b);
+  return function(t) { return arc(i(t)); };
+}
+function tweenText(b) 
+{
+  var i = d3.interpolate({startAngle:0, endAngle:0}, b);
+  return function(t) { return "translate(" + arc.centroid(i(t)) + ")"; };
+}
+</script>

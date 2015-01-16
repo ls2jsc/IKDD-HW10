@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>臺灣102年底各縣市人口地圖一覽</title>
+		<style>	
+		body {
+		  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		  position: relative;
+		  width: 900px;
+		}
+		#map {
+			width: 900px;
+			height: 700px;
+		}
+		path {
+		  stroke: #fff;
+		  stroke-width: .5px;
+		}
+
+		path:hover {
+		  fill: red;
+		}
+		.d3-tip {
+		  line-height: 1;
+		  font-weight: bold;
+		  padding: 12px;
+		  background: rgba(0, 0, 0, 0.8);
+		  color: #fff;
+		  border-radius: 2px;
+		}
+
+		/* Creates a small triangle extender for the tooltip 
+		.d3-tip:after {
+		  box-sizing: border-box;
+		  display: inline;
+		  font-size: 10px;
+		  width: 100%;
+		  line-height: 1;
+		  color: rgba(0, 0, 0, 0.8);
+		  content: "\25BC";
+		  position: absolute;
+		  text-align: center;
+		}*/
+
+		/* Style northward tooltips differently */
+		.d3-tip.n:after {
+		  margin: -1px 0 0 0;
+		  top: 100%;
+		  left: 0;
+		}
+		label {
+		  position: absolute;
+		  top: 10px;
+		  right: 10px;
+		}
+		</style>
+	</head>
+	<body>
+		<svg id="map"></svg>
+	<label>
+		<form action="bar.html">
+		<button class="change">View in bar chart</button>
+		</form>
+		<form action="donut.html">
+		<button class="change1">View in donut chart</button>
+		</form>
+	</label>
+	</body>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+	<script src="http://d3js.org/topojson.v1.min.js"></script>
+	<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+	<script>
+	var tip = d3.tip()
+		  .attr('class', 'd3-tip')
+		  .offset([-10, 0])
+		  .html(function(d) {
+			return "<strong>" + d.properties.name + "<br>人口:</strong> <span style='color:red'>" + d.properties.value + "</span>";
+		  })
+		
+	d3.json("twCounty2010merge.topo.json", function (error, data) {
+		d3.csv("Hw10_data.csv", function (Data) {
+			var population = new Array();
+			for(var i = 0, len = Data.length; i < len; i+=1) {
+				population[Data[i].city] = Data[i].population;
+			}
+	  		topo = topojson.feature(data, data.objects.layer1);
+			prj = d3.geo.mercator().center([120.979531, 23.978567]).scale(7500);
+			path = d3.geo.path().projection(prj);					
+			
+			for(var i = 0, len = topo.features.length; i < len; i+=1) {
+				topo.features[i].properties.value = population[topo.features[i].properties.name]
+			}
+			colorMap = d3.scale.linear()
+					.domain([0,4000000])
+					.range(["#E4FDEB","#209A02"]);
+			locks = d3.select("svg#map")
+					.selectAll("path")
+					.data(topo.features).enter()
+					.append("path")
+					.on('mouseover', tip.show)
+					.on('mouseout', tip.hide)
+					.attr("fill",function(d){ return colorMap(d.properties.value); })
+					.attr("d", path);
+			locks.call(tip);
+	
+			
+		});
+	});
+	</script>	
+</html>
